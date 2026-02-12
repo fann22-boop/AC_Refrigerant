@@ -1,4 +1,4 @@
-const CACHE_NAME = 'fuyi-ac-v2';
+const CACHE_NAME = 'fuyi-ac-v3';
 const ASSETS_TO_CACHE = [
     '/',
     '/ad',   // 廣告頁也要快取

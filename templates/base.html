@@ -459,8 +459,7 @@
         function checkAdAndNavigate(targetUrl) {
             
             // --- 模式 A：實體廠商包月 (每3次跳轉一次手寫廣告) ---
-            // * 若未來有廠商贊助，請取消下方的註解，並註解掉模式 B *
-            /*
+            // 已由 fuyi-dev 啟用，用於測試 ad_page.html 優化效果
             let count = parseInt(localStorage.getItem('fuyi_click_count') || '0');
             count++;
             localStorage.setItem('fuyi_click_count', count);
@@ -471,11 +470,9 @@
                 window.location.href = '/ad?next=' + encodeURIComponent(targetUrl);
                 return; 
             }
-            */
             
             // --- 模式 B：Google AdSense (自動插頁廣告) ---
-            // Google 會自動偵測頁面切換並隨機插入全螢幕廣告
-            // 我們不需要計數，直接跳轉即可
+            // 若需要切換回 Google 模式，請註解上方模式 A 並取消下方註解
             window.location.href = targetUrl;
         }
     </script>
