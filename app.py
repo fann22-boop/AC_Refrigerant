@@ -294,6 +294,22 @@ def admin_reports():
         return render_template('admin/reports.html', reports=records)
     except: return "讀取回報失敗。"
 
+@app.route('/admin/users')
+@login_required
+@admin_required
+def admin_users():
+    users = get_all_users(True)
+    return render_template('admin/users.html', users=users.values())
+
+@app.route('/admin/db')
+@login_required
+@admin_required
+def admin_db():
+    df = get_data()
+    # 建立 Google Sheets 連結
+    sheet_url = f"https://docs.google.com/spreadsheets/d/{get_gspread_client().open(SHEET_NAME).id}/edit"
+    return render_template('admin/db.html', cars=df.to_dict('records'), sheet_url=sheet_url)
+
 @app.route('/admin/handle_report/<int:row_idx>')
 @login_required
 @admin_required
