@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html class="dark" lang="zh-TW">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>會員資料除錯後台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body class="bg-gray-900 text-white font-[Manrope] p-6">
+    <div class="max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-bold text-blue-400">會員資料庫除錯模式</h1>
+                <p class="text-gray-400 text-sm">目前共有 {{ total }} 位會員 (已強制同步 Google Sheets)</p>
+            </div>
+            <a href="/home" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm">回到首頁</a>
+        </div>
+
+        <div class="overflow-x-auto bg-gray-800 rounded-xl shadow-xl border border-gray-700">
+            <table class="w-full text-left text-sm text-gray-400">
+                <thead class="bg-gray-700/50 text-xs uppercase text-gray-200">
+                    <tr>
+                        <th class="px-6 py-4">姓名</th>
+                        <th class="px-6 py-4">手機 (帳號)</th>
+                        <th class="px-6 py-4 text-yellow-400">密碼 (明文)</th>
+                        <th class="px-6 py-4">車行名稱</th>
+                        <th class="px-6 py-4">Email</th>
+                        <th class="px-6 py-4 text-center">名片照片</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-700">
+                    {% for user in users %}
+                    <tr class="hover:bg-gray-700/30 transition-colors">
+                        <td class="px-6 py-4 font-bold text-white">{{ user.name }}</td>
+                        <td class="px-6 py-4 font-mono text-blue-300">{{ user.phone }}</td>
+                        <td class="px-6 py-4 font-mono text-yellow-300">{{ user.password }}</td>
+                        <td class="px-6 py-4">{{ user.shop_name }}</td>
+                        <td class="px-6 py-4">{{ user.email }}</td>
+                        <td class="px-6 py-4 text-center">
+                            {% if user.card_url %}
+                                <a href="{{ user.card_url }}" target="_blank" class="inline-block px-3 py-1 bg-blue-600/20 text-blue-400 rounded hover:bg-blue-600 hover:text-white transition text-xs">
+                                    查看名片
+                                </a>
+                            {% else %}
+                                <span class="text-gray-600 text-xs">未上傳</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4 p-4 bg-red-900/20 border border-red-900/50 rounded-lg text-red-300 text-xs">
+            <strong>⚠️ 安全警告：</strong> 此頁面顯示了使用者的明文密碼，請勿截圖外流。正式上線後建議移除此路由或加上管理員權限驗證。
+        </div>
+    </div>
+</body>
+</html>

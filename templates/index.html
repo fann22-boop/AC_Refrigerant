@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+
+{% block header_title %}
+選擇廠牌
+{% endblock %}
+
+{% block content %}
+<!-- 搜尋框：藍色嵌入式面板 -->
+<div class="relative group sticky top-4 z-20 mb-6">
+    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+        <span class="material-icons-outlined text-gray-400 group-focus-within:text-blue-500 transition-colors">search</span>
+    </div>
+    <input type="text" id="searchInput" placeholder="搜尋品牌或車型 (例如: Camry)..." class="block w-full pl-11 pr-4 py-4 bg-white dark:bg-blue-950/20 border-t border-l border-white/5 border-b border-r border-black/10 rounded-2xl font-bold focus:ring-4 focus:ring-blue-500/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] transition-all text-gray-900 dark:text-white placeholder-gray-500">
+</div>
+
+<!-- 最近查詢紀錄 -->
+<div id="recentHistory" class="hidden mb-8 animate-in fade-in slide-in-from-top-4 duration-500">
+    <div class="flex items-center justify-between mb-3 px-1">
+        <h3 class="text-xs font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest flex items-center gap-2">
+            <span class="material-icons-round text-sm">history</span>
+            最近查詢紀錄
+        </h3>
+        <button onclick="clearHistory()" class="text-[10px] font-bold text-blue-500 hover:text-blue-600 transition-colors">清除全部</button>
+    </div>
+    <div id="historyList" class="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+        <!-- 紀錄會動態插入 -->
+    </div>
+</div>
+
+<!-- 搜尋結果區 (車型直接搜尋) -->
+<div id="searchResults" class="hidden mb-8">
+    <h3 class="text-xs font-black text-blue-500 uppercase tracking-widest mb-4 px-1">符合的車型</h3>
+    <div id="modelResults" class="space-y-3">
+        <!-- 搜尋結果會動態插入 -->
+    </div>
+</div>
+
+<!-- 廣告：AC519+ 旗艦設備 (寬屏與行動端穩定版) -->
+<div class="mb-8" id="adBanner">
+    <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] p-5 shadow-2xl border border-slate-100 dark:border-red-500/20 relative overflow-hidden group cursor-pointer active:scale-[0.98] transition-all">
+        
+        <!-- 背景光暈 (僅深色模式) -->
+        <div class="hidden dark:block absolute -right-20 -bottom-20 w-64 h-64 bg-red-600/10 rounded-full blur-[80px]"></div>
+
+        <a href="https://shop.ecartool.com/product_info.php/products_id/399" target="_blank" class="flex items-center gap-6 relative z-10">
+            <!-- 產品圖：固定大小防止推擠 -->
+            <div class="w-28 h-28 bg-slate-50 dark:bg-black rounded-3xl flex items-center justify-center flex-shrink-0 border border-slate-100 dark:border-white/10 overflow-hidden shadow-inner group-hover:scale-105 transition-transform duration-500">
+                <img src="/static/ac519.jpg?v={{ range(1, 999) | random }}" 
+                     alt="AC519+" 
+                     class="w-full h-full object-contain p-2"
+                     style="filter: drop-shadow(0 0 10px rgba(220, 38, 38, 0.1));">
+            </div>
+            
+            <!-- 內容區 -->
+            <div class="flex-1 min-w-0">
+                <div class="space-y-1">
+                    <p class="text-red-600 dark:text-red-500 font-black text-[10px] uppercase tracking-[0.2em]">Smartlink 易檢車服</p>
+                    <!-- 強制不換行 (whitespace-nowrap) 確保 + 號不掉下去 -->
+                    <h3 class="text-slate-900 dark:text-white font-black text-2xl italic tracking-tighter leading-none whitespace-nowrap">
+                        AC519<span class="text-red-600">＋</span>
+                    </h3>
+                </div>
+                <p class="text-slate-500 dark:text-slate-400 text-xs font-bold mt-2 leading-tight">全自動智能冷媒清洗機</p>
+                <div class="mt-4 inline-flex items-center gap-2 px-3 py-1 bg-red-50 dark:bg-red-600/10 rounded-full border border-red-100 dark:border-red-500/20 group-hover:bg-red-600 group-hover:text-white transition-all">
+                    <span class="text-[10px] font-black text-red-600 dark:text-red-500 group-hover:text-white uppercase tracking-widest">立即了解 專家首選</span>
+                    <span class="material-icons-round text-sm">arrow_forward</span>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- 品牌網格：陽極氧化藍卡片 -->
+<div class="grid grid-cols-2 gap-4 pb-8" id="brandGrid">
+    <!-- 骨架屏預設顯示 -->
+    <div class="skeleton h-40 rounded-[2rem]"></div>
+    <div class="skeleton h-40 rounded-[2rem]"></div>
+    <div class="skeleton h-40 rounded-[2rem]"></div>
+    <div class="skeleton h-40 rounded-[2rem]"></div>
+    <div class="skeleton h-40 rounded-[2rem]"></div>
+    <div class="skeleton h-40 rounded-[2rem]"></div>
+</div>
+
+<style>
+@keyframes shimmer {
+    0% { transform: translateX(-150%) skewX(-12deg); }
+    100% { transform: translateX(150%) skewX(-12deg); }
+}
+</style>
+
+<script>
+// --- 最近紀錄管理 ---
+function renderHistory() {
+    const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    const container = document.getElementById('recentHistory');
+    const list = document.getElementById('historyList');
+    
+    if (history.length === 0) {
+        container.classList.add('hidden');
+        return;
+    }
+    
+    container.classList.remove('hidden');
+    list.innerHTML = history.map(item => `
+        <div onclick="checkAdAndNavigate('/detail/${item.id}')" class="flex-shrink-0 bg-white dark:bg-surface-dark border border-gray-100 dark:border-gray-800 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-sm active:scale-95 transition-transform cursor-pointer">
+            <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                <span class="material-icons-round text-lg">history</span>
+            </div>
+            <div>
+                <p class="text-xs font-black text-gray-900 dark:text-white leading-tight">${item.model}</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">${item.brand}</p>
+            </div>
+        </div>
+    `).join('');
+}
+
+function clearHistory() {
+    localStorage.removeItem(HISTORY_KEY);
+    renderHistory();
+}
+
+// --- 本地優先渲染邏輯 ---
+function renderBrandsFromLocal() {
+    const localData = localStorage.getItem('fuyi_db_data');
+    if (!localData) return;
+
+    try {
+        const db = JSON.parse(localData);
+        // 提取不重複的品牌並排序
+        const brands = [...new Set(db.map(item => item.brand))].sort();
+        const grid = document.getElementById('brandGrid');
+        
+        grid.innerHTML = brands.map(brand => `
+            <div onclick="checkAdAndNavigate('/models/${brand}')" class="brand-card metallic-card tap-feedback p-6 rounded-[2rem] flex flex-col items-center border border-blue-500/5 hover:border-blue-500/40 transition-all group cursor-pointer relative overflow-hidden select-none" data-brand="${brand}">
+                <div class="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-500/10 shadow-sm flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:scale-110 transition-all duration-500 text-blue-600 dark:text-blue-400 relative z-10 pointer-events-none">
+                    <span class="material-icons-round text-3xl group-hover:text-white transition-colors">directions_car</span>
+                </div>
+                <span class="brand-name font-black text-base text-gray-800 dark:text-blue-100 tracking-tight relative z-10 pointer-events-none">${brand}</span>
+                <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 w-12 h-12 bg-blue-500/0 group-hover:bg-blue-500/10 blur-xl transition-all pointer-events-none"></div>
+            </div>
+        `).join('');
+    } catch (e) {
+        console.error("解析本地資料失敗", e);
+    }
+}
+
+// 優先嘗試本地渲染，讓速度看起來像閃電一樣快
+document.addEventListener('DOMContentLoaded', () => {
+    // 渲染最近紀錄
+    renderHistory();
+
+    // 延遲一點點渲染品牌，讓骨架屏有一點點展示時間（如果有資料）
+    // 或者如果沒資料就等同步
+    if (localStorage.getItem('fuyi_db_data')) {
+        setTimeout(renderBrandsFromLocal, 300);
+    }
+    
+    // 模糊搜尋功能 (品牌 + 車型)
+    document.getElementById('searchInput').addEventListener('input', function() {
+        let filter = this.value.toUpperCase().trim();
+        let cards = document.querySelectorAll('.brand-card');
+        const resultsArea = document.getElementById('searchResults');
+        const modelList = document.getElementById('modelResults');
+        const brandGrid = document.getElementById('brandGrid');
+        const adBanner = document.getElementById('adBanner');
+
+        if (filter === "") {
+            cards.forEach(card => card.style.display = "flex");
+            resultsArea.classList.add('hidden');
+            brandGrid.classList.remove('hidden');
+            adBanner.classList.remove('hidden');
+            return;
+        }
+
+        // 搜尋品牌
+        cards.forEach(card => {
+            let name = card.getAttribute('data-brand') || "";
+            if (name.toUpperCase().indexOf(filter) > -1) {
+                card.style.display = "flex";
+            } else {
+                card.style.display = "none";
+            }
+        });
+
+        // 搜尋車型 (模糊搜尋)
+        const localData = localStorage.getItem('fuyi_db_data');
+        if (localData) {
+            const db = JSON.parse(localData);
+            const matches = db.filter(item => {
+                const searchStr = `${item.brand} ${item.model} ${item.spec} ${item.generation}`.toUpperCase();
+                return searchStr.includes(filter);
+            }).slice(0, 15); // 增加到 15 筆
+
+            if (matches.length > 0) {
+                resultsArea.classList.remove('hidden');
+                modelList.innerHTML = matches.map(car => `
+                    <div onclick="handleCarClick(${JSON.stringify(car).replace(/"/g, '&quot;')})" class="bg-white dark:bg-surface-dark p-4 rounded-2xl border border-gray-100 dark:border-gray-800 flex justify-between items-center active:scale-[0.98] transition-all cursor-pointer">
+                        <div>
+                            <h4 class="font-black text-gray-900 dark:text-white">${car.model}</h4>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">${car.brand} · ${car.generation}</p>
+                        </div>
+                        <span class="text-xs font-black text-blue-500 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-lg">${car.refrigerant_type}</span>
+                    </div>
+                `).join('');
+            } else {
+                resultsArea.classList.add('hidden');
+            }
+        }
+    });
+});
+
+function handleCarClick(car) {
+    addToHistory(car);
+    checkAdAndNavigate('/detail/' + car.id);
+}
+</script>
+{% endblock %}

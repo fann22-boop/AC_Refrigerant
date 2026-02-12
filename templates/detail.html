@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block header_title %}
+<button onclick="checkAdAndNavigate('/models/{{ car['brand'] }}')" class="mr-2 inline-flex items-center text-gray-400 hover:text-blue-500 transition-colors focus:outline-none">
+    <span class="material-icons-round">arrow_back</span>
+</button>
+詳細規格
+{% endblock %}
+
+{% block content %}
+<!-- 車型標題區域 -->
+<div class="relative mb-6">
+    <div class="bg-gradient-to-br from-blue-700 via-blue-800 to-gray-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden border border-white/10">
+        <!-- 裝飾背景 -->
+        <div class="absolute top-0 right-0 w-40 h-40 bg-blue-400 opacity-20 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+        <div class="absolute bottom-0 left-0 w-32 h-32 bg-purple-500 opacity-10 rounded-full -ml-16 -mb-16 blur-2xl"></div>
+        
+        <div class="relative z-10">
+            <div class="flex items-center gap-2 mb-4">
+                <span class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border border-white/10">
+                    {{ car['brand'] }}
+                </span>
+                <span class="bg-blue-400/30 backdrop-blur-md px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase border border-blue-400/20">
+                    {{ car['generation'] }}
+                </span>
+            </div>
+            <h2 class="text-3xl font-black mb-1 tracking-tighter leading-tight">{{ car['model'] }}</h2>
+            <p class="text-blue-100/70 text-lg font-bold tracking-tight">{{ car['spec'] }}</p>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 gap-4 pb-4">
+    
+    <!-- 冷媒區域 (最重要) -->
+    <div class="bg-white dark:bg-surface-dark rounded-[2rem] p-6 shadow-xl border border-gray-100 dark:border-gray-800 relative overflow-hidden">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 shadow-inner">
+                    <span class="material-icons-round text-2xl">ac_unit</span>
+                </div>
+                <h3 class="font-black text-gray-900 dark:text-white text-xl tracking-tight">冷媒規格</h3>
+            </div>
+            <span class="text-[10px] font-black text-blue-600 bg-blue-100 dark:bg-blue-500/20 px-3 py-1 rounded-full uppercase tracking-widest border border-blue-200 dark:border-blue-500/30">
+                {{ car['refrigerant_type'] }}
+            </span>
+        </div>
+        
+        <div class="bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl p-6 border border-blue-100/50 dark:border-blue-500/10 mb-4">
+            <div class="flex items-end justify-between mb-6">
+                <div>
+                    <p class="text-[10px] text-gray-400 dark:text-gray-500 font-black uppercase tracking-[0.2em] mb-1">填充重量</p>
+                    <div class="flex items-baseline gap-1">
+                        <span class="text-6xl font-black text-blue-600 tracking-tighter" id="refrigerant-qty">{{ car['refrigerant_qty'] }}</span>
+                        <span class="text-2xl font-bold text-blue-400">g</span>
+                    </div>
+                </div>
+                <button onclick="copyToClipboard('{{ car['refrigerant_qty'] }}', '冷媒重量')" class="w-14 h-14 bg-white dark:bg-gray-800 rounded-2xl shadow-md flex items-center justify-center text-gray-400 hover:text-blue-600 active:scale-90 transition-all border border-gray-100 dark:border-gray-700">
+                    <span class="material-icons-round">content_copy</span>
+                </button>
+            </div>
+
+            <!-- 視覺化刻度條 -->
+            <div class="relative h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                {% set qty = car['refrigerant_qty'] | float %}
+                {% set percent = (qty / 1200 * 100) if qty < 1200 else 100 %}
+                <div class="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-400 to-blue-600 rounded-full" style="width: {{ percent }}%"></div>
+            </div>
+            <div class="flex justify-between mt-2 text-[10px] font-black text-gray-400 uppercase tracking-tighter">
+                <span>0g</span>
+                <span>標準乘用車範圍 (400-800g)</span>
+                <span>1200g+</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 冷凍油區域 -->
+    <div class="bg-white dark:bg-surface-dark rounded-[2rem] p-6 shadow-xl border border-gray-100 dark:border-gray-800">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-500/10 flex items-center justify-center text-amber-600 shadow-inner">
+                <span class="material-icons-round text-2xl">oil_barrel</span>
+            </div>
+            <h3 class="font-black text-gray-900 dark:text-white text-xl tracking-tight">冷凍油</h3>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+            <div class="p-5 bg-gray-50 dark:bg-gray-800/50 rounded-3xl border border-gray-100 dark:border-gray-700">
+                <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-2">規格</p>
+                <p class="text-xl font-black text-gray-800 dark:text-gray-200 tracking-tight">{{ car['oil_type'] }}</p>
+            </div>
+            <div class="p-5 bg-amber-50/50 dark:bg-amber-900/10 rounded-3xl border border-amber-100/50 dark:border-amber-500/10">
+                <p class="text-[10px] text-amber-600 font-black uppercase tracking-widest mb-2">總容量</p>
+                <div class="flex items-baseline gap-1">
+                    <span class="text-3xl font-black text-amber-600 tracking-tighter">{{ car['oil_qty'] }}</span>
+                    <span class="text-sm font-bold text-amber-400">ml</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if car['notes'] %}
+    <!-- 備註區域 (警告風格) -->
+    <div class="bg-red-50 dark:bg-red-950/20 p-6 rounded-[2rem] border-2 border-dashed border-red-200 dark:border-red-900/50 flex gap-4">
+        <div class="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center text-red-600 shrink-0">
+            <span class="material-icons-round">priority_high</span>
+        </div>
+        <div>
+            <h4 class="font-black text-red-900 dark:text-red-300 mb-1 text-sm tracking-tight">技師特別叮嚀</h4>
+            <p class="text-sm text-red-700 dark:text-red-200/70 leading-relaxed font-medium">
+                {{ car['notes'] }}
+            </p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 底部導購/聯繫 -->
+    <div class="mt-4 space-y-4">
+        <button class="w-full bg-gray-900 dark:bg-white text-white dark:text-black py-5 rounded-[2rem] font-black text-lg flex items-center justify-center gap-3 shadow-2xl active:scale-[0.98] transition-all">
+            <span class="material-icons-round">contact_support</span>
+            聯繫京富毅叫料
+        </button>
+
+        <button onclick="openReportModal()" class="w-full flex items-center justify-center gap-2 text-gray-400 hover:text-red-500 transition-colors py-2 text-sm font-bold">
+            <span class="material-icons-round text-sm">report_problem</span>
+            資料有誤？點此回報
+        </button>
+    </div>
+</div>
+
+<!-- 回報錯誤 Modal -->
+<div id="reportModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeReportModal()"></div>
+    <div class="absolute bottom-0 left-0 right-0 md:relative md:max-w-md md:mx-auto md:mt-20 transform transition-transform duration-300 translate-y-full" id="modalContent">
+        <div class="bg-white dark:bg-gray-900 rounded-t-[2.5rem] md:rounded-[2.5rem] p-8 shadow-2xl border-t border-gray-100 dark:border-gray-800">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight">回報資料錯誤</h3>
+                <button onclick="closeReportModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-icons-round">close</span>
+                </button>
+            </div>
+            
+            <form action="/report" method="POST" class="space-y-6">
+                <input type="hidden" name="car_id" value="{{ car['id'] }}">
+                <input type="hidden" name="car_info" value="{{ car['brand'] }} {{ car['model'] }} ({{ car['generation'] }})">
+                
+                <div>
+                    <label class="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">錯誤描述</label>
+                    <textarea name="message" rows="4" required placeholder="例如：冷媒量應為 500g 而非 450g..." 
+                        class="w-full bg-gray-50 dark:bg-gray-800 border-2 border-transparent focus:border-blue-500 rounded-3xl p-5 text-gray-900 dark:text-white placeholder-gray-400 transition-all outline-none resize-none"></textarea>
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-5 rounded-3xl font-black text-lg shadow-xl shadow-blue-500/20 active:scale-[0.98] transition-all">
+                    送出回報
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 儲存到最近紀錄與 IndexedDB 離線快取
+    document.addEventListener('DOMContentLoaded', async () => {
+        const carData = {
+            id: "{{ car['id'] }}",
+            brand: "{{ car['brand'] }}",
+            model: "{{ car['model'] }}",
+            generation: "{{ car['generation'] }}",
+            spec: "{{ car['spec'] }}",
+            refrigerant_type: "{{ car['refrigerant_type'] }}",
+            refrigerant_qty: "{{ car['refrigerant_qty'] }}",
+            oil_type: "{{ car['oil_type'] }}",
+            oil_qty: "{{ car['oil_qty'] }}",
+            notes: "{{ car['notes'] | replace('\n', ' ') | replace('"', '\"') }}"
+        };
+
+        // 1. 儲存到 localStorage 紀錄 (使用 base.html 定義的函式)
+        if (window.addToHistory) {
+            window.addToHistory(carData);
+        }
+
+        // 2. 儲存到 IndexedDB 進行全離線查詢備份
+        if (window.saveCarToOffline) {
+            await window.saveCarToOffline(carData);
+            console.log("📦 已備份至離線資料庫");
+        }
+    });
+
+    function openReportModal() {
+        const modal = document.getElementById('reportModal');
+        const content = document.getElementById('modalContent');
+        modal.classList.remove('hidden');
+        setTimeout(() => {
+            content.classList.remove('translate-y-full');
+            content.classList.add('translate-y-0');
+        }, 10);
+    }
+
+    function closeReportModal() {
+        const modal = document.getElementById('reportModal');
+        const content = document.getElementById('modalContent');
+        content.classList.remove('translate-y-0');
+        content.classList.add('translate-y-full');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 300);
+    }
+
+    function copyToClipboard(text, label) {
+        const temp = document.createElement('textarea');
+        temp.value = text;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        alert(label + '：' + text + ' 已複製');
+    }
+</script>
+{% endblock %}

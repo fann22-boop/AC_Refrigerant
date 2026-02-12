@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>會員註冊 - 京富毅</title>
+    
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('fuyi_theme') || 'dark';
+            if (savedTheme === 'dark') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined|Material+Icons+Round" rel="stylesheet"/>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-[Manrope] min-h-screen flex items-center justify-center p-6 transition-colors duration-200">
+    
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-gray-900/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+        <h3 class="text-xl font-bold text-white animate-pulse">正在建立帳號...</h3>
+        <p class="text-gray-400 text-sm mt-2 text-center px-6">正在上傳名片並加密資料<br>請勿關閉視窗，這可能需要幾秒鐘</p>
+    </div>
+    <div class="w-full max-w-sm">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold mb-1">註冊新帳號</h1>
+            <p class="text-gray-400 text-sm">加入會員，完整使用查詢功能</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="mb-4 p-3 rounded-lg text-sm text-center font-bold bg-red-500/20 text-red-300">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST" enctype="multipart/form-data" class="space-y-3" id="register-form">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 mb-1">姓名/稱呼 <span class="text-red-500">*</span></label>
+                    <input type="text" name="name" required placeholder="王小明" class="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-900 dark:text-white transition-all">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 mb-1">手機號碼 <span class="text-red-500">*</span></label>
+                    <input type="tel" name="phone" required maxlength="10" placeholder="0912..." class="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-900 dark:text-white transition-all">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 mb-1">車行/公司名稱 <span class="text-red-500">*</span></label>
+                <input type="text" name="shop_name" required placeholder="xx 汽車修配廠" class="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-900 dark:text-white transition-all">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 mb-1">上傳名片 <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <input type="file" 
+                           name="card_image" 
+                           required
+                           accept="image/*" 
+                           capture="environment"
+                           class="block w-full text-xs text-gray-400
+                              file:mr-4 file:py-2 file:px-4
+                              file:rounded-lg file:border-0
+                              file:text-xs file:font-semibold
+                              file:bg-blue-600 file:text-white
+                              hover:file:bg-blue-500
+                              bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer focus:outline-none
+                           "/>
+                </div>
+                <p class="text-[10px] text-gray-500 mt-1">
+                    <span class="material-icons-round text-[10px] align-middle">photo_camera</span>
+                    手機可直接開啟相機拍攝
+                </p>
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 mb-1">Email 信箱 <span class="text-red-500">*</span></label>
+                <input type="email" name="email" required placeholder="用於找回密碼" class="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-900 dark:text-white transition-all">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-bold text-gray-400 mb-1">設定密碼 <span class="text-red-500">*</span></label>
+                <input type="password" name="password" required class="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-lg text-sm focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-900 dark:text-white transition-all">
+            </div>
+            
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors mt-2 shadow-lg shadow-blue-600/30">
+                提交註冊
+            </button>
+        </form>
+
+        <div class="mt-6 text-center text-sm text-gray-500">
+            已經有帳號？ 
+            <a href="/login" class="text-blue-400 hover:text-blue-300 font-bold">直接登入</a>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('register-form').addEventListener('submit', function() {
+            // 只有當表單驗證通過（required欄位都有填）才會觸發 submit
+            // 顯示遮罩
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>

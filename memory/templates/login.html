@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+    <title>會員登入 - 京富毅</title>
+    
+    <script>
+        (function() {
+            const savedTheme = localStorage.getItem('fuyi_theme') || 'dark';
+            if (savedTheme === 'dark') document.documentElement.classList.add('dark');
+            else document.documentElement.classList.remove('dark');
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined|Material+Icons+Round" rel="stylesheet"/>
+    <style>
+        /* 確保全螢幕高度但內容可滑動 */
+        .safe-scroll {
+            height: auto;
+            min-height: 100vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        /* 滾動容器，確保內容不被截斷 */
+        .modal-body-scroll {
+            max-height: 80vh;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-white font-[Manrope] transition-colors duration-200">
+    
+    <div id="loading-overlay" class="hidden fixed inset-0 bg-gray-900/90 z-[100] flex flex-col items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500 mb-4"></div>
+        <h3 class="text-xl font-bold text-white animate-pulse">正在登入系統...</h3>
+    </div>
+
+    <div class="w-full max-w-sm mx-auto min-h-screen flex flex-col items-center justify-center p-6">
+        <div class="w-full">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold mb-2">歡迎回來</h1>
+                <p class="text-gray-400">請登入以存取冷媒資料庫</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="mb-4 p-3 rounded-lg text-sm text-center font-bold {{ 'bg-red-500/20 text-red-300' if category == 'error' else 'bg-green-500/20 text-green-300' }}">
+                    {{ message }}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="space-y-4" id="login-form">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 mb-1 uppercase tracking-wider">手機號碼</label>
+                    <input type="tel" name="phone" required maxlength="10" pattern="[0-9]*" inputmode="numeric" placeholder="0912345678" 
+                           class="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-900 dark:text-white text-lg tracking-wider transition-all">
+                </div>
+                <div>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">密碼</label>
+                        <button type="button" onclick="openForgotModal()" class="text-[10px] font-bold text-blue-400 hover:text-blue-300">忘記密碼？</button>
+                    </div>
+                    <input type="password" name="password" required class="w-full bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 rounded-xl focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-gray-900 dark:text-white text-lg transition-all">
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl transition-colors shadow-lg shadow-blue-600/30">
+                    登入
+                </button>
+            </form>
+
+            <div class="mt-8 text-center text-sm text-gray-500">
+                還沒有帳號嗎？ 
+                <a href="/register" class="text-blue-400 hover:text-blue-300 font-bold">免費註冊</a>
+            </div>
+            
+            <div class="mt-4 text-center">
+                <a href="/" class="text-xs text-gray-600">回首頁</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 忘記密碼 Modal - 重新設計手機滾動結構 -->
+    <div id="forgotModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+        <!-- 背景遮罩 -->
+        <div class="fixed inset-0 bg-black/80 backdrop-blur-sm" onclick="closeForgotModal()"></div>
+        
+        <!-- 內容容器：使用 flex 與 py 確保在手機上可以上下推動 -->
+        <div class="relative min-h-screen flex items-center justify-center p-4 pointer-events-none">
+            <div class="relative w-full max-w-sm bg-white dark:bg-gray-900 p-8 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-800 pointer-events-auto">
+                <h3 class="text-xl font-bold mb-2">找回密碼</h3>
+                <p class="text-gray-400 text-xs mb-6">請輸入註冊時的手機號碼，系統將發送驗證碼到您的信箱。</p>
+                
+                <form action="/forgot_password" method="POST" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-1 uppercase">手機號碼</label>
+                        <input type="tel" name="phone" required placeholder="0912..." class="w-full bg-gray-50 dark:bg-gray-800 border-transparent focus:border-blue-500 rounded-xl p-4 text-lg text-gray-900 dark:text-white outline-none transition-all">
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold shadow-lg shadow-blue-600/20 transition-all active:scale-95">發送驗證碼</button>
+                </form>
+                <button onclick="closeForgotModal()" class="w-full mt-6 text-sm text-gray-500 font-bold hover:text-gray-400 transition-colors">取消並返回</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openForgotModal() { 
+            document.getElementById('forgotModal').classList.remove('hidden'); 
+            // 由於 Modal 容器現在自己可以捲動，我們鎖定 body
+            document.body.style.overflow = 'hidden';
+        }
+        function closeForgotModal() { 
+            document.getElementById('forgotModal').classList.add('hidden'); 
+            document.body.style.overflow = '';
+        }
+        
+        document.getElementById('login-form').addEventListener('submit', function() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
+        });
+    </script>
+</body>
+</html>

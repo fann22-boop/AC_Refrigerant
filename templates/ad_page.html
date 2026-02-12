@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AC519+ 專業級冷媒管理專家</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;700;800&display=swap');
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #ffffff;
+            overflow: hidden;
+        }
+        .clean-card {
+            background: #ffffff;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 20px 40px -10px rgba(0,0,0,0.05);
+        }
+        .red-gradient-text {
+            background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .red-glow-btn {
+            box-shadow: 0 10px 20px -5px rgba(220, 38, 38, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .red-glow-btn:hover {
+            box-shadow: 0 15px 30px -5px rgba(220, 38, 38, 0.5);
+            transform: translateY(-2px);
+        }
+        .floating-image {
+            animation: float 5s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-10px) scale(1.02); }
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex items-center justify-center text-slate-800 bg-slate-50">
+    <!-- 跳過按鈕 -->
+    <div class="absolute top-6 right-6 z-50">
+        <a id="skipBtn" href="{{ next_page }}" class="bg-slate-200/80 backdrop-blur-md border border-slate-300 text-slate-600 px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-2 pointer-events-none opacity-80 transition-all">
+            <span id="countdown">10</span> 秒後進入系統
+        </a>
+    </div>
+
+    <!-- 柔和背景裝飾 -->
+    <div class="absolute top-0 left-0 w-full h-full pointer-events-none">
+        <div class="absolute top-0 right-0 w-1/2 h-full bg-red-50/50 -skew-x-12 transform translate-x-1/4"></div>
+        <div class="absolute -bottom-20 -left-20 w-96 h-96 bg-red-100/30 rounded-full blur-[100px]"></div>
+    </div>
+
+    <div class="relative z-10 container mx-auto px-6 flex flex-col lg:flex-row items-center justify-center gap-12 lg:gap-20">
+        <!-- 左側：產品視覺 (白底乾淨呈現) -->
+        <div class="w-full max-w-sm lg:max-w-md lg:flex-1 relative floating-image">
+            <div class="bg-white p-6 rounded-[3rem] shadow-2xl border border-slate-100 relative">
+                <div class="w-full aspect-square bg-slate-50 rounded-[2.5rem] flex items-center justify-center overflow-hidden">
+                    <img src="/static/ac519.jpg?v={{ range(1, 999) | random }}" 
+                         alt="AC519+" 
+                         class="object-contain w-full h-full p-4">
+                </div>
+                <!-- 標籤 -->
+                <div class="absolute -top-4 -right-4 bg-red-600 text-white font-black px-5 py-2 rounded-2xl text-xs tracking-widest uppercase shadow-xl rotate-12">
+                    Professional Choice
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：文案內容 -->
+        <div class="lg:flex-1 text-center lg:text-left space-y-6">
+            <div>
+                <div class="flex items-center justify-center lg:justify-start gap-2 mb-3">
+                    <span class="h-px w-8 bg-red-600"></span>
+                    <h2 class="text-red-600 font-black tracking-[0.3em] text-xs uppercase">Smartlink 易檢車服</h2>
+                </div>
+                <h1 class="text-6xl lg:text-8xl font-black italic red-gradient-text leading-none mb-4">
+                    AC519<span class="text-red-500">+</span>
+                </h1>
+                <p class="text-2xl lg:text-3xl text-slate-900 font-extrabold tracking-tight">
+                    全自動智能冷媒清洗加注機
+                </p>
+                <p class="text-slate-500 text-base mt-4 font-medium leading-relaxed max-w-md mx-auto lg:mx-0">
+                    一鍵全自動操作，內建高精度電子秤與專利循環清洗系統，為專業技師打造的高效率冷氣保養旗艦機。
+                </p>
+            </div>
+
+            <div class="pt-6 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                <a href="https://shop.ecartool.com/product_info.php/products_id/399" target="_blank" 
+                   class="red-glow-btn w-full sm:w-auto inline-flex items-center justify-center gap-3 px-12 py-5 bg-red-600 text-white font-black text-lg rounded-2xl uppercase tracking-widest active:scale-95 transition-all">
+                    了解更多詳情
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
+                </a>
+            </div>
+            
+            <div class="flex items-center justify-center lg:justify-start gap-8 pt-4 opacity-60">
+                <div class="text-center">
+                    <p class="text-xs font-black text-slate-400 uppercase">精度</p>
+                    <p class="text-lg font-bold text-slate-800">±5g</p>
+                </div>
+                <div class="w-px h-8 bg-slate-200"></div>
+                <div class="text-center">
+                    <p class="text-xs font-black text-slate-400 uppercase">系統</p>
+                    <p class="text-lg font-bold text-slate-800">全自動</p>
+                </div>
+                <div class="w-px h-8 bg-slate-200"></div>
+                <div class="text-center">
+                    <p class="text-xs font-black text-slate-400 uppercase">技術</p>
+                    <p class="text-lg font-bold text-slate-800">專利清洗</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let seconds = 10;
+        const countdownEl = document.getElementById('countdown');
+        const skipBtn = document.getElementById('skipBtn');
+
+        const timer = setInterval(() => {
+            seconds--;
+            if (countdownEl) countdownEl.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(timer);
+                skipBtn.innerHTML = '進入系統 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>';
+                skipBtn.classList.remove('pointer-events-none', 'opacity-80');
+                skipBtn.classList.add('bg-slate-800', 'text-white', 'shadow-2xl', 'opacity-100');
+                setTimeout(() => window.location.href = skipBtn.getAttribute('href'), 1500);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

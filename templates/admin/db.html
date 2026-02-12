@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block header_title %}
+<button onclick="history.back()" class="mr-2 inline-flex items-center text-gray-400 hover:text-blue-500 transition-colors">
+    <span class="material-icons-round">arrow_back</span>
+</button>
+資料庫維護
+{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    <div class="bg-blue-600 p-6 rounded-[2rem] text-white shadow-xl">
+        <h3 class="font-black text-xl mb-2">資料維護說明</h3>
+        <p class="text-sm opacity-80 font-bold leading-relaxed">目前系統採用 Google Sheets 作為核心。為確保資料一致性，請點擊下方按鈕跳轉至 Google Sheets 進行批次修改或新增。</p>
+        <a href="{{ sheet_url }}" target="_blank" class="mt-4 inline-flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-2xl font-black text-sm">
+            <span class="material-icons-round text-sm">open_in_new</span>
+            開啟 Google Sheets
+        </a>
+    </div>
+
+    <div class="p-2">
+        <h4 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 ml-1">快速預覽 (前 50 筆)</h4>
+        <div class="space-y-3">
+            {% for car in cars[:50] %}
+            <div class="bg-white dark:bg-surface-dark p-4 rounded-2xl shadow border border-gray-100 dark:border-gray-800 flex items-center justify-between">
+                <div>
+                    <h5 class="font-black text-gray-900 dark:text-white">{{ car['brand'] }} {{ car['model'] }}</h5>
+                    <p class="text-[10px] text-gray-400 font-bold">{{ car['refrigerant_qty'] }}g / {{ car['oil_qty'] }}ml</p>
+                </div>
+                <a href="/detail/{{ car['id'] }}" class="text-blue-500">
+                    <span class="material-icons-round">visibility</span>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

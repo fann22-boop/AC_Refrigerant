@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+
+{% block header_left %}
+<a href="/home" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+    <span class="material-icons-round text-gray-400">arrow_back</span>
+</a>
+{% endblock %}
+
+{% block header_title %}技師工具箱{% endblock %}
+
+{% block content %}
+<style>
+    /* 隱藏數字輸入框的上下箭頭 */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+    /* 自定義捲軸 */
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+    .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+    .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #4b5563; }
+</style>
+
+<div class="max-w-md mx-auto space-y-6">
+    <div class="bg-gray-100 dark:bg-gray-800 p-1 rounded-xl flex transition-colors duration-200">
+        <button onclick="switchTab('refrigerant')" id="tab-refrigerant" class="flex-1 py-2 text-sm font-bold rounded-lg transition-all bg-blue-600 text-white shadow-lg">
+            電子冷媒尺
+        </button>
+        <button onclick="switchTab('oil')" id="tab-oil" class="flex-1 py-2 text-sm font-bold rounded-lg transition-all text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+            冷凍油規範
+        </button>
+    </div>
+
+    <div id="content-refrigerant" class="space-y-6">
+        
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-xl relative overflow-hidden transition-colors duration-200">
+            <div class="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl"></div>
+            
+            <h2 class="text-sm font-bold text-gray-500 dark:text-gray-300 mb-4 flex items-center gap-2">
+                <span class="material-icons-round text-blue-500">thermostat</span>
+                溫度查壓力 (PSI / Bar)
+            </h2>
+
+            <div class="space-y-2 mb-6">
+                <div class="relative">
+                    <input type="number" id="inputTemp" placeholder="輸入環境溫度..." oninput="calculatePressure()" 
+                           class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl py-3 pl-4 pr-12 text-xl font-mono font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder-gray-400 dark:placeholder-gray-600">
+                    <span class="absolute right-4 top-3.5 text-gray-400 dark:text-gray-500 font-bold">°C</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-500/30 rounded-xl p-3 text-center transition-colors">
+                    <div class="text-blue-600 dark:text-blue-400 text-xs font-bold mb-1 uppercase tracking-wider">R134a</div>
+                    <div class="text-2xl font-bold font-mono text-gray-900 dark:text-white" id="val-r134a">--</div>
+                    <div class="text-[10px] text-gray-400">PSI</div>
+                    <div class="mt-1 pt-1 border-t border-blue-100 dark:border-blue-500/20">
+                        <span class="text-lg font-mono text-blue-700 dark:text-blue-200" id="val-r134a-bar">--</span>
+                        <span class="text-[10px] text-gray-400">Bar</span>
+                    </div>
+                </div>
+
+                <div class="bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-500/30 rounded-xl p-3 text-center transition-colors">
+                    <div class="text-green-600 dark:text-green-400 text-xs font-bold mb-1 uppercase tracking-wider">R1234yf</div>
+                    <div class="text-2xl font-bold font-mono text-gray-900 dark:text-white" id="val-r1234yf">--</div>
+                    <div class="text-[10px] text-gray-400">PSI</div>
+                    <div class="mt-1 pt-1 border-t border-green-100 dark:border-green-500/20">
+                        <span class="text-lg font-mono text-green-700 dark:text-green-200" id="val-r1234yf-bar">--</span>
+                        <span class="text-[10px] text-gray-400">Bar</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700 shadow-xl relative overflow-hidden transition-colors duration-200">
+            <div class="absolute -right-6 -top-6 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl"></div>
+
+            <h2 class="text-sm font-bold text-gray-500 dark:text-gray-300 mb-4 flex items-center gap-2">
+                <span class="material-icons-round text-purple-500">speed</span>
+                壓力反查飽和溫度 (PSI → °C)
+            </h2>
+
+            <div class="space-y-2 mb-6">
+                <div class="relative">
+                    <input type="number" id="inputPressure" placeholder="輸入壓力值..." oninput="calculateTempFromPressure()" 
+                           class="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl py-3 pl-4 pr-12 text-xl font-mono font-bold text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-all placeholder-gray-400 dark:placeholder-gray-600">
+                    <span class="absolute right-4 top-3.5 text-gray-400 dark:text-gray-500 font-bold">PSI</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-600 rounded-xl p-3 text-center transition-colors">
+                    <div class="text-gray-500 dark:text-gray-400 text-[10px] font-bold mb-1 uppercase tracking-wider">如果是 R134a</div>
+                    <div class="text-2xl font-bold font-mono text-blue-600 dark:text-blue-300" id="temp-res-r134a">--</div>
+                    <div class="text-[10px] text-gray-400 dark:text-gray-500">飽和溫度 °C</div>
+                </div>
+
+                <div class="bg-gray-50 dark:bg-gray-700/30 border border-gray-100 dark:border-gray-600 rounded-xl p-3 text-center transition-colors">
+                    <div class="text-gray-500 dark:text-gray-400 text-[10px] font-bold mb-1 uppercase tracking-wider">如果是 R1234yf</div>
+                    <div class="text-2xl font-bold font-mono text-green-600 dark:text-green-300" id="temp-res-r1234yf">--</div>
+                    <div class="text-[10px] text-gray-400 dark:text-gray-500">飽和溫度 °C</div>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <h3 class="text-sm font-bold text-gray-500 dark:text-gray-400 mb-3 ml-1 uppercase tracking-widest">常用數據速查表</h3>
+            <div class="overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto custom-scrollbar shadow-sm transition-colors">
+                <table class="w-full text-sm text-center relative">
+                    <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs sticky top-0 shadow-sm">
+                        <tr>
+                            <th class="py-3 px-2">溫度 °C</th>
+                            <th class="py-3 px-2 text-blue-600 dark:text-blue-300">R134a<br><span class="text-[9px] text-gray-400 font-normal">PSI / Bar</span></th>
+                            <th class="py-3 px-2 text-green-600 dark:text-green-300">R1234yf<br><span class="text-[9px] text-gray-400 font-normal">PSI / Bar</span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="lookupTableBody" class="divide-y divide-gray-100 dark:divide-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="content-oil" class="space-y-6 hidden">
+        <div class="space-y-4">
+            <h3 class="text-sm font-bold text-gray-400 ml-1 uppercase tracking-widest">PAG 合成冷凍油</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 flex items-start gap-4 shadow-sm transition-colors duration-200">
+                <div class="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center text-yellow-600 dark:text-yellow-500 shrink-0 font-black border border-yellow-500/20 shadow-inner">46</div>
+                <div><h4 class="font-bold text-gray-900 dark:text-white">PAG 46 (低黏度)</h4><p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">最常見規格。適用於多數日系、韓系與部分美系新車壓縮機。</p></div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 flex items-start gap-4 shadow-sm transition-colors duration-200">
+                <div class="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-500 shrink-0 font-black border border-orange-500/20 shadow-inner">100</div>
+                <div><h4 class="font-bold text-gray-900 dark:text-white">PAG 100 (中黏度)</h4><p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">常見於美系車 (Ford/GM) 及部分歐系舊款壓縮機。</p></div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 flex items-start gap-4 shadow-sm transition-colors duration-200">
+                <div class="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center text-red-600 dark:text-red-500 shrink-0 font-black border border-red-500/20 shadow-inner">150</div>
+                <div><h4 class="font-bold text-gray-900 dark:text-white">PAG 150 (高黏度)</h4><p class="text-xs text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">舊式壓縮機或大型壓縮機使用。現今車款較少見。</p></div>
+            </div>
+        </div>
+        <div class="space-y-2">
+            <h3 class="text-sm font-bold text-red-500 ml-1 uppercase tracking-widest">⚠️ 油電車 / 電動車專用</h3>
+            <div class="bg-red-50 dark:bg-red-900/20 rounded-2xl p-6 border-2 border-dashed border-red-200 dark:border-red-500/30 relative overflow-hidden transition-colors duration-200">
+                <div class="absolute -right-4 -top-4 text-red-500/10 text-9xl font-black">!</div>
+                <div class="relative z-10">
+                    <h4 class="text-red-600 dark:text-red-400 font-black flex items-center gap-2 text-lg uppercase tracking-tight">
+                        <span class="material-icons-round">electric_bolt</span>
+                        絕緣冷凍油 (POE)
+                    </h4>
+                    <p class="text-sm text-red-800 dark:text-gray-300 mt-2 leading-relaxed">電動壓縮機內含高壓馬達線圈，<b class="text-red-600 dark:text-white">嚴禁使用一般 PAG 油</b>，以免漏電或燒毀。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabName) {
+        const btnRef = document.getElementById('tab-refrigerant');
+        const btnOil = document.getElementById('tab-oil');
+        const contentRef = document.getElementById('content-refrigerant');
+        const contentOil = document.getElementById('content-oil');
+        if (tabName === 'refrigerant') {
+            contentRef.classList.remove('hidden'); contentOil.classList.add('hidden');
+            btnRef.classList.add('bg-blue-600', 'text-white', 'shadow-lg'); btnRef.classList.remove('text-gray-500', 'dark:text-gray-400');
+            btnOil.classList.remove('bg-blue-600', 'text-white', 'shadow-lg'); btnOil.classList.add('text-gray-500', 'dark:text-gray-400');
+        } else {
+            contentRef.classList.add('hidden'); contentOil.classList.remove('hidden');
+            btnOil.classList.add('bg-blue-600', 'text-white', 'shadow-lg'); btnOil.classList.remove('text-gray-500', 'dark:text-gray-400');
+            btnRef.classList.remove('bg-blue-600', 'text-white', 'shadow-lg'); btnRef.classList.add('text-gray-500', 'dark:text-gray-400');
+        }
+    }
+
+    const pressureTable = [
+        { t: -30,  r134: -2.28,  r1234: -0.16 },
+        { t: -25,  r134: 0.91,  r1234: 3.30 },
+        { t: -20,  r134: 4.73,  r1234: 7.37 },
+        { t: -15,  r134: 9.25,  r1234: 12.12 },
+        { t: -10,  r134: 14.57,  r1234: 17.64 },
+        { t: -5,  r134: 20.77,  r1234: 24 },
+        { t: 0,  r134: 27.94,  r1234: 31.28 },
+        { t: 5,  r134: 36.19,  r1234: 39.57 },
+        { t: 10, r134: 45.61,  r1234: 48.94 },
+        { t: 15, r134: 56.31,  r1234: 59.48 },
+        { t: 20, r134: 68.40,  r1234: 71.30 },
+        { t: 25, r134: 81.98,  r1234: 84.48 },
+        { t: 30, r134: 97.18,  r1234: 99.1 },
+        { t: 35, r134: 114.1, r1234: 115.3 },
+        { t: 40, r134: 132.9, r1234: 133.2 },
+        { t: 45, r134: 153.7, r1234: 152.8 },
+        { t: 50, r134: 176.6, r1234: 174.4 },
+        { t: 55, r134: 201.8, r1234: 197.9 },
+        { t: 60, r134: 229.4, r1234: 223.6 },
+        { t: 65, r134: 259.6, r1234: 251.6 },
+        { t: 70, r134: 292.5, r1234: 282 },
+        { t: 75, r134: 328.4, r1234: 315 },
+        { t: 80, r134: 367.4, r1234: 350.9 },
+        { t: 85, r134: 409.8, r1234: 389.8 },
+        { t: 90, r134: 456, r1234: 429.6 },
+        { t: 95, r134: 506.3, r1234: 429.6 }
+    ];
+
+    const PSI_TO_BAR = 0.0689476;
+
+    function generateLookupTable() {
+        const tbody = document.getElementById('lookupTableBody');
+        tbody.innerHTML = ''; 
+        pressureTable.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.className = "transition-colors";
+            tr.innerHTML = `
+                <td class="py-3 font-black text-gray-900 dark:text-white border-b border-gray-100 dark:border-gray-700/50">${item.t}</td>
+                <td class="text-blue-600 dark:text-blue-200 border-b border-gray-100 dark:border-gray-700/50">
+                    <div class="font-black text-base">${Math.round(item.r134)}</div>
+                    <div class="text-[9px] text-gray-400 font-medium">${(item.r134 * PSI_TO_BAR).toFixed(1)}</div>
+                </td>
+                <td class="text-green-600 dark:text-green-200 border-b border-gray-100 dark:border-gray-700/50">
+                    <div class="font-black text-base">${Math.round(item.r1234)}</div>
+                    <div class="text-[9px] text-gray-400 font-medium">${(item.r1234 * PSI_TO_BAR).toFixed(1)}</div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function interpolate(value, x1, y1, x2, y2) {
+        return y1 + (value - x1) * (y2 - y1) / (x2 - x1);
+    }
+
+    function calculatePressure() {
+        const inputVal = document.getElementById('inputTemp').value;
+        const r134aDisp = document.getElementById('val-r134a');
+        const r134aBar = document.getElementById('val-r134a-bar');
+        const r1234yfDisp = document.getElementById('val-r1234yf');
+        const r1234yfBar = document.getElementById('val-r1234yf-bar');
+
+        if (inputVal === "") {
+            r134aDisp.innerText = "--"; r134aBar.innerText = "--";
+            r1234yfDisp.innerText = "--"; r1234yfBar.innerText = "--";
+            return;
+        }
+
+        const tempC = parseFloat(inputVal);
+        const minTemp = pressureTable[0].t;
+        const maxTemp = pressureTable[pressureTable.length - 1].t;
+
+        if (tempC < minTemp || tempC > maxTemp) {
+            r134aDisp.innerText = "Err"; r134aBar.innerText = "-";
+            r1234yfDisp.innerText = "Err"; r1234yfBar.innerText = "-";
+            return;
+        }
+
+        let p134 = 0, p1234 = 0;
+        for (let i = 0; i < pressureTable.length - 1; i++) {
+            const p1 = pressureTable[i];
+            const p2 = pressureTable[i + 1];
+            if (tempC >= p1.t && tempC <= p2.t) {
+                p134 = interpolate(tempC, p1.t, p1.r134, p2.t, p2.r134);
+                p1234 = interpolate(tempC, p1.t, p1.r1234, p2.t, p2.r1234);
+                break;
+            }
+        }
+        r134aDisp.innerText = Math.round(p134);
+        r1234yfDisp.innerText = Math.round(p1234);
+        r134aBar.innerText = (p134 * PSI_TO_BAR).toFixed(2);
+        r1234yfBar.innerText = (p1234 * PSI_TO_BAR).toFixed(2);
+    }
+
+    function calculateTempFromPressure() {
+        const inputP = parseFloat(document.getElementById('inputPressure').value);
+        const res134 = document.getElementById('temp-res-r134a');
+        const res1234 = document.getElementById('temp-res-r1234yf');
+
+        if (isNaN(inputP)) {
+            res134.innerText = "--"; res1234.innerText = "--"; return;
+        }
+
+        let t134 = getTempByPressure(inputP, 'r134');
+        res134.innerText = t134 !== null ? t134.toFixed(1) : "超表";
+
+        let t1234 = getTempByPressure(inputP, 'r1234');
+        res1234.innerText = t1234 !== null ? t1234.toFixed(1) : "超表";
+    }
+
+    function getTempByPressure(pressure, type) {
+        if (pressure < pressureTable[0][type] || pressure > pressureTable[pressureTable.length-1][type]) return null;
+        for (let i = 0; i < pressureTable.length - 1; i++) {
+            const p1 = pressureTable[i][type];
+            const p2 = pressureTable[i + 1][type];
+            const t1 = pressureTable[i].t;
+            const t2 = pressureTable[i + 1].t;
+            if (pressure >= p1 && pressure <= p2) {
+                return t1 + (pressure - p1) * (t2 - t1) / (p2 - p1);
+            }
+        }
+        return null;
+    }
+
+    document.addEventListener('DOMContentLoaded', generateLookupTable);
+</script>
+{% endblock %}

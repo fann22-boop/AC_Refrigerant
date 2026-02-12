@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block header_title %}
+<button onclick="history.back()" class="mr-2 inline-flex items-center text-gray-400 hover:text-blue-500 transition-colors">
+    <span class="material-icons-round">arrow_back</span>
+</button>
+錯誤回報清單
+{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    {% for report in reports | reverse %}
+    <div class="bg-white dark:bg-surface-dark p-6 rounded-[2rem] shadow-lg border border-gray-100 dark:border-gray-800">
+        <div class="flex items-center justify-between mb-4">
+            <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ report['時間'] }}</span>
+            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest {% if report['狀態'] == '待處理' %}bg-amber-100 text-amber-600{% else %}bg-green-100 text-green-600{% endif %}">
+                {{ report['狀態'] }}
+            </span>
+        </div>
+        
+        <div class="mb-4">
+            <p class="text-[10px] text-blue-600 font-black uppercase tracking-widest mb-1">車型資訊</p>
+            <h3 class="font-black text-gray-900 dark:text-white">{{ report['車型資訊'] }}</h3>
+        </div>
+        
+        <div class="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-100 dark:border-gray-800 mb-4">
+            <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-2">回報內容</p>
+            <p class="text-sm font-bold text-gray-700 dark:text-gray-300 leading-relaxed">{{ report['錯誤描述'] }}</p>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs text-gray-400 font-bold">
+            <span class="material-icons-round text-sm">person</span>
+            {{ report['使用者'] }}
+        </div>
+        
+        <div class="mt-6 pt-4 border-t border-gray-50 dark:border-gray-800/50 flex gap-2">
+            <a href="/detail/{{ report['Car ID'] }}" class="flex-1 bg-blue-600 text-white py-3 rounded-2xl font-black text-sm text-center">查看資料</a>
+            {% if report['狀態'] == '待處理' %}
+            <a href="/admin/handle_report/{{ report['row_idx'] }}" class="flex-1 bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 py-3 rounded-2xl font-black text-sm text-center">標記已處理</a>
+            {% else %}
+            <div class="flex-1 bg-green-50 dark:bg-green-900/10 text-green-600 py-3 rounded-2xl font-black text-sm text-center">已處理完成</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

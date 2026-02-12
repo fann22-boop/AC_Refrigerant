@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartSafe AC519+ 智能冷氣保養機</title>
+    <style>
+        :root {
+            --primary-red: #D9232D; /* 機器上的紅色 */
+            --primary-black: #1A1A1A;
+            --text-grey: #666;
+            --bg-light: #F8F9FA;
+            --white: #FFFFFF;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--primary-black);
+            line-height: 1.6;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--white);
+            padding: 15px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-weight: 900;
+            font-size: 1.2rem;
+            color: var(--primary-red);
+            font-style: italic;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, #2c3e50 0%, #000000 100%);
+            color: var(--white);
+            padding: 40px 20px;
+            text-align: center;
+            border-bottom-right-radius: 50px;
+        }
+
+        .hero h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .hero p {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 20px;
+        }
+
+        .product-img-container {
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .product-img {
+            max-width: 100%;
+            height: auto;
+            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.3));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Features Section */
+        .features {
+            padding: 40px 20px;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+            color: var(--primary-black);
+            position: relative;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .section-title::after {
+            content: '';
+            display: block;
+            width: 50px;
+            height: 3px;
+            background-color: var(--primary-red);
+            margin: 10px auto 0;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: flex-start;
+            transition: transform 0.2s;
+        }
+
+        .feature-card:active {
+            transform: scale(0.98);
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            margin-right: 15px;
+            min-width: 40px;
+        }
+
+        .feature-text h3 {
+            color: var(--primary-red);
+            margin-bottom: 5px;
+            font-size: 1.1rem;
+        }
+
+        .feature-text p {
+            font-size: 0.9rem;
+            color: var(--text-grey);
+        }
+
+        /* Specs Highlight */
+        .highlight {
+            background-color: var(--primary-red);
+            color: var(--white);
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .highlight-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 40px 20px;
+            text-align: center;
+            background-color: var(--white);
+        }
+
+        .btn-main {
+            display: inline-block;
+            background-color: var(--primary-red);
+            color: var(--white);
+            padding: 15px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 15px rgba(217, 35, 45, 0.4);
+            transition: all 0.3s;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .btn-main:hover {
+            background-color: #b01c25;
+            transform: translateY(-2px);
+        }
+
+        .price-tag {
+            font-size: 1.8rem;
+            color: var(--primary-black);
+            margin-bottom: 20px;
+            font-weight: 800;
+        }
+        
+        .contact-info {
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: var(--text-grey);
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--primary-black);
+            color: #888;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.8rem;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">SmartSafe</div>
+        <div style="font-size: 0.9rem; font-weight: bold;">專業汽修設備</div>
+    </header>
+
+    <section class="hero">
+        <h1>汽車冷氣保養<br>全新進化</h1>
+        <p>SmartSafe AC519+ 全自動冷媒回收充填機<br>精準．高效．智能</p>
+        
+        <div class="product-img-container">
+            <img src="1000046064.jpg" alt="SmartSafe AC519+ Machine" class="product-img">
+        </div>
+        
+        <a href="#contact" class="btn-main" style="background: white; color: var(--primary-red);">立即諮詢方案</a>
+    </section>
+
+    <section class="features">
+        <h2 class="section-title">為什麼選擇 AC519+？</h2>
+        
+        <div class="feature-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <div class="feature-text">
+                    <h3>全自動操作</h3>
+                    <p>回收、抽真空、充填一鍵完成，無需人工繁瑣監控，提升維修效率。</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <div class="feature-text">
+                    <h3>內建車型資料庫</h3>
+                    <p>涵蓋市面主流車款冷媒數據，精準充填，避免人為失誤。</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🖥️</div>
+                <div class="feature-text">
+                    <h3>智能觸控介面</h3>
+                    <p>大尺寸 LCD 彩色螢幕，圖形化操作流程，直觀易懂好上手。</p>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <div class="feature-text">
+                    <h3>多重安全保護</h3>
+                    <p>具備自動檢漏與壓力保護機制，確保設備與人員操作安全。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="highlight">
+        <h2>卓越性能數據</h2>
+        <div class="highlight-grid">
+            <div class="stat-box">
+                <div class="stat-value">99%</div>
+                <div class="stat-label">回收效率</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">±10g</div>
+                <div class="stat-label">充填精度</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">全自動</div>
+                <div class="stat-label">油品管理</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-value">Smart</div>
+                <div class="stat-label">智能診斷</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section" id="contact">
+        <h2 style="margin-bottom: 10px;">升級您的保養服務</h2>
+        <p style="margin-bottom: 20px; color: #666;">立即聯繫，獲取獨家優惠報價與詳細規格書</p>
+        
+        <a href="https://electa.com.my/product/value-500-plus-air-conditioner-servicing-machine/" class="btn-main">前往官網查看</a>
+        
+        <div class="contact-info">
+            <p>或致電客服專線</p>
+            <p style="font-size: 1.2rem; color: var(--primary-black); font-weight: bold; margin-top: 5px;">0800-XXX-XXX</p>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2024 SmartSafe Automotive Equipment. All rights reserved.</p>
+    </footer>
+
+</body>
+</html>
