@@ -1,0 +1,15 @@
+ * Tip: There are .env files present. Install python-dotenv to use them.
+ * Serving Flask app 'app'
+ * Debug mode: on
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.22.110.73:5000
+[33mPress CTRL+C to quit[0m
+ * Restarting with stat
+ * Tip: There are .env files present. Install python-dotenv to use them.
+ * Debugger is active!
+ * Debugger PIN: 136-387-839
+127.0.0.1 - - [10/Feb/2026 00:04:00] "HEAD / HTTP/1.1" 200 -
+127.0.0.1 - - [10/Feb/2026 00:13:10] "[32mHEAD /home HTTP/1.1[0m" 302 -
+127.0.0.1 - - [10/Feb/2026 00:13:13] "HEAD /login HTTP/1.1" 200 -

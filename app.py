@@ -13,14 +13,27 @@ import base64
 import os
 from functools import wraps
 
+from flask_compress import Compress
+import json
+
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_fuyi_ac' 
+Compress(app)
 
 # --- 設定區 ---
 SHEET_NAME = 'AC_Refrigerant_DB'
 CREDENTIALS_FILE = 'credentials.json'
 ADMIN_PHONES = ['0937966850'] 
 DB_PATH = 'data_cache.db'
+
+# 支援雲端環境變數
+GOOGLE_CREDENTIALS = os.environ.get('GOOGLE_CREDENTIALS')
+
+def get_gspread_client():
+    if GOOGLE_CREDENTIALS:
+        creds_dict = json.loads(GOOGLE_CREDENTIALS)
+        return gspread.service_account_from_dict(creds_dict)
+    return gspread.service_account(filename=CREDENTIALS_FILE)
 
 # --- 郵件設定 (Gmail) ---
 # 注意：你需要到 Gmail 設定「應用程式密碼」才能發信
@@ -41,12 +54,15 @@ def admin_required(f):
 
 # --- SQLite 快取管理 ---
 def init_local_db():
-    if not os.path.exists(DB_PATH):
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)''')
-        conn.commit()
-        conn.close()
+    try:
+        if not os.path.exists(DB_PATH):
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute('''CREATE TABLE IF NOT EXISTS config (key TEXT PRIMARY KEY, value TEXT)''')
+            conn.commit()
+            conn.close()
+    except Exception as e:
+        print(f"⚠️ SQLite 初始化失敗 (可能是唯讀環境): {e}")
 
 def get_cached_data():
     try:
@@ -54,16 +70,20 @@ def get_cached_data():
         df = pd.read_sql_query("SELECT * FROM cars", conn)
         conn.close()
         return df
-    except:
+    except Exception as e:
+        print(f"⚠️ 無法讀取本地快取: {e}")
         return None
 
 def save_to_cache(df, version):
-    conn = sqlite3.connect(DB_PATH)
-    df.to_sql('cars', conn, if_exists='replace', index=False)
-    c = conn.cursor()
-    c.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('version', ?)", (version,))
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        df.to_sql('cars', conn, if_exists='replace', index=False)
+        c = conn.cursor()
+        c.execute("INSERT OR REPLACE INTO config (key, value) VALUES ('version', ?)", (version,))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"⚠️ 快取儲存失敗: {e}")
 
 # --- 核心資料讀取 (智慧同步版) ---
 _data_cache = None
@@ -173,9 +193,6 @@ login_manager.login_view = 'login'
 @login_manager.user_loader
 def load_user(user_id):
     return get_all_users().get(user_id)
-
-def get_gspread_client():
-    return gspread.service_account(filename=CREDENTIALS_FILE)
 
 def send_mail(to_email, subject, body):
     try:

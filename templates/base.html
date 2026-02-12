@@ -8,7 +8,7 @@
     <script>
         // 在頁面渲染前立即執行，防止閃爍
         (function() {
-            const savedTheme = localStorage.getItem('fuyi_theme') || 'dark';
+            const savedTheme = localStorage.getItem('fuyi_theme') || 'light';
             if (savedTheme === 'dark') {
                 document.documentElement.classList.add('dark');
             } else {
@@ -161,7 +161,7 @@
     </style>
 </head>
 
-<body class="bg-gray-50 dark:bg-background-dark font-display antialiased text-gray-900 dark:text-white transition-colors duration-200">
+<body class="bg-white dark:bg-background-dark font-display antialiased text-gray-900 dark:text-white transition-colors duration-200">
     <!-- PWA 安裝引導 (隱藏，直到觸發) -->
     <div id="pwa-install-prompt" class="fixed bottom-0 left-0 w-full z-[100] p-4 max-w-md mx-auto right-0">
         <div class="bg-white dark:bg-surface-dark rounded-3xl shadow-[0_-20px_50px_-12px_rgba(0,0,0,0.3)] border border-blue-500/20 p-6 flex flex-col gap-4">
@@ -193,7 +193,7 @@
         </div>
     </div>
 
-    <div class="max-w-md mx-auto min-h-screen relative shadow-2xl bg-gray-50 dark:bg-background-dark flex flex-col">
+    <div class="max-w-md mx-auto min-h-screen relative shadow-2xl bg-white dark:bg-background-dark flex flex-col">
         <!-- 離線提示條 -->
         <div id="offline-indicator" class="hidden bg-amber-500 text-white text-[10px] font-black py-1 text-center uppercase tracking-widest animate-pulse">
             離線模式：目前正在瀏覽快取資料
@@ -354,14 +354,14 @@
         }
 
         function toggleTheme() {
-            const current = localStorage.getItem('fuyi_theme') || 'dark';
+            const current = localStorage.getItem('fuyi_theme') || 'light';
             const next = current === 'dark' ? 'light' : 'dark';
             applyTheme(next);
         }
 
         // 初始化圖示 (因為 CSS 已經在 Head 處理過 class 了)
         document.addEventListener('DOMContentLoaded', () => {
-            const savedTheme = localStorage.getItem('fuyi_theme') || 'dark';
+            const savedTheme = localStorage.getItem('fuyi_theme') || 'light';
             applyTheme(savedTheme);
         });
 
