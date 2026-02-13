@@ -198,7 +198,14 @@ def get_data():
         sheet = client.open(SHEET_NAME).sheet1
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
-        if 'id' in df.columns: df['id'] = df['id'].astype(str)
+        
+        # 強制確保 id 欄位存在且為字串
+        if 'id' in df.columns:
+            df['id'] = df['id'].astype(str)
+        else:
+            # 如果試算表沒 id 欄位，則以列號作為 id
+            df['id'] = [str(i+1) for i in range(len(df))]
+            
         save_to_cache(df, current_version)
         _data_cache = df
         _db_version_cache = current_version
@@ -293,8 +300,16 @@ def home():
 @login_required
 def show_detail(car_id):
     df = get_data()
+    # 增加安全檢查，如果 car_id 為空或 undefined，導回首頁
+    if not car_id or car_id == 'undefined':
+        return redirect(url_for('home'))
     car = df[df['id'].astype(str) == str(car_id)].to_dict('records')
     return render_template('detail.html', car=car[0]) if car else "找不到該車型資料。"
+
+@app.route('/detail/')
+@login_required
+def show_detail_empty():
+    return redirect(url_for('home'))
 
 @app.route('/report', methods=['POST'])
 @login_required

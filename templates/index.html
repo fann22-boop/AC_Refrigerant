@@ -102,7 +102,7 @@ function renderHistory() {
     
     container.classList.remove('hidden');
     list.innerHTML = history.map(item => `
-        <div onclick="checkAdAndNavigate('/detail/${item.id}')" class="flex-shrink-0 bg-white dark:bg-surface-dark border border-gray-100 dark:border-gray-800 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-sm active:scale-95 transition-transform cursor-pointer">
+        <div onclick="if('${item.id}' && '${item.id}' !== 'undefined') { checkAdAndNavigate('/detail/${item.id}') } else { alert('資料版本過舊，請重新搜尋'); }" class="flex-shrink-0 bg-white dark:bg-surface-dark border border-gray-100 dark:border-gray-800 px-4 py-3 rounded-2xl flex items-center gap-3 shadow-sm active:scale-95 transition-transform cursor-pointer">
             <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                 <span class="material-icons-round text-lg">history</span>
             </div>
@@ -194,7 +194,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (matches.length > 0) {
                 resultsArea.classList.remove('hidden');
                 modelList.innerHTML = matches.map(car => `
-                    <div onclick="handleCarClick(${JSON.stringify(car).replace(/"/g, '&quot;')})" class="bg-white dark:bg-surface-dark p-4 rounded-2xl border border-gray-100 dark:border-gray-800 flex justify-between items-center active:scale-[0.98] transition-all cursor-pointer">
+                    <div onclick="if('${car.id}' && '${car.id}' !== 'undefined') { handleCarClick(${JSON.stringify(car).replace(/"/g, '&quot;')}) } else { alert('此資料缺少編號，請重新整理資料庫'); }" class="bg-white dark:bg-surface-dark p-4 rounded-2xl border border-gray-100 dark:border-gray-800 flex justify-between items-center active:scale-[0.98] transition-all cursor-pointer">
                         <div>
                             <h4 class="font-black text-gray-900 dark:text-white">${car.model}</h4>
                             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">${car.brand} · ${car.generation}</p>

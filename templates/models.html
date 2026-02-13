@@ -74,7 +74,7 @@
             // 延遲渲染以展示骨架屏效果
             setTimeout(() => {
                 carList.innerHTML = cars.map(car => `
-                    <div onclick="checkAdAndNavigate('/detail/${car.id}')" 
+                    <div onclick="if('${car.id}' && '${car.id}' !== 'undefined') { checkAdAndNavigate('/detail/${car.id}') } else { alert('資料缺少編號'); }" 
                          class="car-item bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 group hover:border-blue-400 dark:hover:border-blue-500 transition-all relative overflow-hidden cursor-pointer select-none transform active:scale-[0.98]"
                          data-search="${car.model} ${car.spec} ${car.generation}">
                         

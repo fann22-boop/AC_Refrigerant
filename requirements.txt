@@ -9,3 +9,5 @@ google-api-python-client
 google-auth-httplib2
 google-auth-oauthlib
 flask-compress
+firebase-admin
+google-cloud-vision
