@@ -4,7 +4,7 @@
 <button onclick="history.back()" class="mr-2 inline-flex items-center text-gray-400 hover:text-blue-500 transition-colors">
     <span class="material-icons-round">arrow_back</span>
 </button>
-會員管理
+會員管理 (Firestore)
 {% endblock %}
 
 {% block content %}
@@ -13,17 +13,21 @@
     <div class="bg-white dark:bg-surface-dark p-6 rounded-[2rem] shadow-lg border border-gray-100 dark:border-gray-800 relative overflow-hidden">
         <div class="flex items-start justify-between">
             <div class="flex items-center gap-4">
+                {% if user.card_image_url %}
+                <img src="{{ user.card_image_url }}" class="w-14 h-14 rounded-2xl object-cover shadow-sm" alt="名片">
+                {% else %}
                 <div class="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-400">
                     <span class="material-icons-round text-3xl">person</span>
                 </div>
+                {% endif %}
                 <div>
                     <h3 class="font-black text-gray-900 dark:text-white text-lg leading-tight">{{ user.name }}</h3>
                     <p class="text-sm text-blue-600 font-bold tracking-tight">{{ user.phone }}</p>
                 </div>
             </div>
-            {% if user.card_url %}
-            <a href="{{ user.card_url }}" target="_blank" class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
-                <span class="material-icons-round">badge</span>
+            {% if user.card_image_url %}
+            <a href="{{ user.card_image_url }}" target="_blank" class="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600">
+                <span class="material-icons-round">visibility</span>
             </a>
             {% endif %}
         </div>

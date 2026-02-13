@@ -4,7 +4,7 @@ import sqlite3
 import secrets
 import smtplib
 from email.mime.text import MIMEText
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, make_response
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 import time
@@ -12,13 +12,31 @@ import requests
 import base64
 import os
 from functools import wraps
-
 from flask_compress import Compress
 import json
+
+# Firebase Imports
+import firebase_admin
+from firebase_admin import credentials, firestore, storage
+from google.cloud import vision
+import re
 
 app = Flask(__name__)
 app.secret_key = 'super_secret_key_fuyi_ac' 
 Compress(app)
+
+# --- Firebase Admin SDK 初始化 ---
+FIREBASE_CREDS_PATH = 'firebase-adminsdk.json'
+if os.path.exists(FIREBASE_CREDS_PATH):
+    cred = credentials.Certificate(FIREBASE_CREDS_PATH)
+    firebase_admin.initialize_app(cred, {
+        'storageBucket': 'caracsystem.firebasestorage.app'
+    })
+    db_firestore = firestore.client()
+    bucket = storage.bucket()
+    print("🔥 Firebase Admin SDK 已成功啟動")
+else:
+    print("⚠️ 找不到 firebase-adminsdk.json，Firebase 功能將受限")
 
 # --- 設定區 ---
 SHEET_NAME = 'AC_Refrigerant_DB'
@@ -36,11 +54,68 @@ def get_gspread_client():
     return gspread.service_account(filename=CREDENTIALS_FILE)
 
 # --- 郵件設定 (Gmail) ---
-# 注意：你需要到 Gmail 設定「應用程式密碼」才能發信
 MAIL_SERVER = 'smtp.gmail.com'
 MAIL_PORT = 587
 MAIL_USERNAME = 'fuyi9188@gmail.com'
-MAIL_PASSWORD = 'nkeasjhllsdzmopm' # 請在此處填入 16 位應用程式密碼
+MAIL_PASSWORD = 'nkeasjhllsdzmopm'
+
+# --- Telegram Notify & OCR Helper ---
+TELEGRAM_BOT_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN', '8285863471:AAHgmjpGfJztqzM6dg8ZGYYtliMaLMfRvDA')
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '1494097322')
+
+def send_telegram_notification(message):
+    if not TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN == 'YOUR_BOT_TOKEN_HERE':
+        print("⚠️ Telegram Bot Token 未設定")
+        return False
+    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": message,
+        "parse_mode": "HTML"
+    }
+    try:
+        response = requests.post(url, json=payload)
+        return response.status_code == 200
+    except Exception as e:
+        print(f"❌ Telegram 通知發送失敗: {e}")
+        return False
+
+def extract_card_info(image_content):
+    """使用 Google Vision OCR 提取姓名與手機號碼"""
+    try:
+        # 如果有環境變數指向憑證檔案，Vision 會自動讀取
+        # 或者我們可以顯式傳遞憑證。這裡假設環境已配置或與現有憑證共用。
+        client = vision.ImageAnnotatorClient()
+        image = vision.Image(content=image_content)
+        response = client.text_detection(image=image)
+        texts = response.text_annotations
+        
+        if not texts:
+            return None, None
+
+        full_text = texts[0].description
+        lines = full_text.split('\n')
+        
+        # 提取手機號碼 (台灣格式 09xx-xxx-xxx 或 09xxxxxxxx)
+        phone_match = re.search(r'09\d{2}-?\d{3}-?\d{3}', full_text)
+        phone = phone_match.group().replace('-', '') if phone_match else None
+        
+        # 啟發式提取姓名: 通常在前面幾行，排除包含地址、電話、Email 的行
+        name = None
+        for line in lines[:5]:
+            line = line.strip()
+            # 排除明顯不是名字的行
+            if len(line) < 2 or len(line) > 10: continue
+            if any(k in line for k in ['市', '路', '街', '巷', '號', '樓', 'Tel', 'Fax', 'Mobile', '@', 'http']):
+                continue
+            if re.search(r'\d', line): continue
+            name = line
+            break
+            
+        return name, phone
+    except Exception as e:
+        print(f"❌ OCR 處理失敗: {e}")
+        return None, None
 
 # --- 裝飾器 ---
 def admin_required(f):
@@ -52,7 +127,7 @@ def admin_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-# --- SQLite 快取管理 ---
+# --- SQLite 快取管理 (冷媒資料用) ---
 def init_local_db():
     try:
         if not os.path.exists(DB_PATH):
@@ -62,7 +137,7 @@ def init_local_db():
             conn.commit()
             conn.close()
     except Exception as e:
-        print(f"⚠️ SQLite 初始化失敗 (可能是唯讀環境): {e}")
+        print(f"⚠️ SQLite 初始化失敗: {e}")
 
 def get_cached_data():
     try:
@@ -70,8 +145,7 @@ def get_cached_data():
         df = pd.read_sql_query("SELECT * FROM cars", conn)
         conn.close()
         return df
-    except Exception as e:
-        print(f"⚠️ 無法讀取本地快取: {e}")
+    except:
         return None
 
 def save_to_cache(df, version):
@@ -85,7 +159,7 @@ def save_to_cache(df, version):
     except Exception as e:
         print(f"⚠️ 快取儲存失敗: {e}")
 
-# --- 核心資料讀取 (智慧同步版) ---
+# --- 核心資料讀取 (智慧同步版 - Google Sheets) ---
 _data_cache = None
 _last_update = 0
 _db_version_cache = None
@@ -95,7 +169,6 @@ def get_db_metadata():
         client = get_gspread_client()
         spreadsheet = client.open(SHEET_NAME)
         sheet = spreadsheet.sheet1
-        # 使用簡單特徵值組合當作版本號
         return f"{sheet.row_count}_{sheet.cell(1,1).value}"
     except:
         return str(time.time())
@@ -103,37 +176,29 @@ def get_db_metadata():
 def get_data():
     global _data_cache, _last_update, _db_version_cache
     current_time = time.time()
-    
     if _data_cache is not None and (current_time - _last_update) < 300:
         return _data_cache
-        
     init_local_db()
-    
     try:
         current_version = get_db_metadata()
-        
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("SELECT value FROM config WHERE key='version'")
         row = c.fetchone()
         local_version = row[0] if row else None
         conn.close()
-
         cached_df = get_cached_data()
         if cached_df is not None and local_version == current_version:
             _data_cache = cached_df
             _db_version_cache = local_version
             _last_update = current_time
             return _data_cache
-
         print(f"🔄 偵測到雲端變動，正在優化本地快取...")
         client = get_gspread_client()
         sheet = client.open(SHEET_NAME).sheet1
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
-        
         if 'id' in df.columns: df['id'] = df['id'].astype(str)
-            
         save_to_cache(df, current_version)
         _data_cache = df
         _db_version_cache = current_version
@@ -143,9 +208,9 @@ def get_data():
         print(f"❌ 快取同步失敗: {e}")
         return get_cached_data() if get_cached_data() is not None else pd.DataFrame()
 
-# --- 會員系統 ---
+# --- 會員系統 (Firestore 版) ---
 class User(UserMixin):
-    def __init__(self, phone, email, name, shop_name, password_hash, reset_code=None):
+    def __init__(self, phone, email, name, shop_name, password_hash, reset_code=None, card_image_url=None):
         self.id = str(phone).strip() 
         self.phone = str(phone).strip()
         self.email = email
@@ -153,38 +218,25 @@ class User(UserMixin):
         self.shop_name = shop_name
         self.password_hash = password_hash
         self.reset_code = reset_code
+        self.card_image_url = card_image_url
 
-_users_cache = {}
-_users_last_update = 0
-
-def get_all_users(force_refresh=False):
-    global _users_cache, _users_last_update
-    current_time = time.time()
-    if not force_refresh and _users_cache and (current_time - _users_last_update) < 600:
-        return _users_cache
-        
+def get_user_from_firestore(phone):
     try:
-        client = get_gspread_client()
-        sheet = client.open(SHEET_NAME).worksheet('Users')
-        records = sheet.get_all_records()
-        new_cache = {}
-        for r in records:
-            phone = str(r.get('phone', '')).strip().lstrip("'")
-            if len(phone) == 9 and phone.isdigit(): phone = "0" + phone
-            if phone:
-                new_cache[phone] = User(
-                    phone, 
-                    r.get('email'), 
-                    r.get('name'), 
-                    r.get('shop_name'), 
-                    str(r.get('password', '')).strip(),
-                    str(r.get('reset_code', '')).strip()
-                )
-        _users_cache = new_cache
-        _users_last_update = current_time
-        return _users_cache
-    except:
-        return _users_cache
+        doc = db_firestore.collection('users').document(phone).get()
+        if doc.exists:
+            d = doc.to_dict()
+            return User(
+                phone=d.get('phone'),
+                email=d.get('email'),
+                name=d.get('name'),
+                shop_name=d.get('shop_name'),
+                password_hash=d.get('password_hash'),
+                reset_code=d.get('reset_code'),
+                card_image_url=d.get('card_image_url')
+            )
+    except Exception as e:
+        print(f"❌ Firestore 讀取使用者失敗: {e}")
+    return None
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -192,7 +244,7 @@ login_manager.login_view = 'login'
 
 @login_manager.user_loader
 def load_user(user_id):
-    return get_all_users().get(user_id)
+    return get_user_from_firestore(user_id)
 
 def send_mail(to_email, subject, body):
     try:
@@ -200,7 +252,6 @@ def send_mail(to_email, subject, body):
         msg['Subject'] = subject
         msg['From'] = MAIL_USERNAME
         msg['To'] = to_email
-        
         with smtplib.SMTP(MAIL_SERVER, MAIL_PORT) as server:
             server.starttls()
             server.login(MAIL_USERNAME, MAIL_PASSWORD)
@@ -222,10 +273,7 @@ def login():
         phone = request.form.get('phone', '').strip()
         password = request.form.get('password', '').strip()
         if len(phone) == 9 and phone.isdigit(): phone = "0" + phone
-        
-        user = get_all_users().get(phone)
-        if not user: user = get_all_users(True).get(phone)
-        
+        user = get_user_from_firestore(phone)
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
             flash(f'☕ 歡迎回來，{user.name}。讓我們開始今天的工作。', 'success')
@@ -254,19 +302,24 @@ def report_error():
     car_id = request.form.get('car_id')
     car_info = request.form.get('car_info')
     message = request.form.get('message', '').strip()
-    
     try:
-        client = get_gspread_client()
-        spreadsheet = client.open(SHEET_NAME)
-        try:
-            report_sheet = spreadsheet.worksheet('Reports')
-        except:
-            report_sheet = spreadsheet.add_worksheet(title='Reports', rows=1000, cols=6)
-            report_sheet.append_row(['時間', '使用者', '車型資訊', '錯誤描述', 'Car ID', '狀態'])
-            
-        report_sheet.append_row([time.strftime('%Y-%m-%d %H:%M:%S'), f"{current_user.name} ({current_user.phone})", car_info, message, car_id, '待處理'])
+        db_firestore.collection('reports').add({
+            'timestamp': time.strftime('%Y-%m-%d %H:%M:%S'),
+            'user_phone': current_user.phone,
+            'user_name': current_user.name,
+            'car_info': car_info,
+            'message': message,
+            'car_id': car_id,
+            'status': '待處理'
+        })
         flash('✨ 感謝回報！這份貢獻讓我們的資料庫變得更加卓越。', 'success')
-    except:
+        
+        # 發送 Telegram 通知
+        notify_msg = f"<b>📢 收到錯誤回報</b>\n👤 使用者: {current_user.name} ({current_user.phone})\n🚗 車型: {car_info}\n📝 內容: {message}"
+        send_telegram_notification(notify_msg)
+        
+    except Exception as e:
+        print(f"Report error: {e}")
         flash('🔧 暫時無法處理回報，請稍後再試。', 'error')
     return redirect(url_for('show_detail', car_id=car_id))
 
@@ -275,48 +328,59 @@ def report_error():
 @login_required
 @admin_required
 def admin_dashboard():
-    users = get_all_users(True)
-    report_count = 0
     try:
-        sheet = get_gspread_client().open(SHEET_NAME).worksheet('Reports')
-        report_count = len([r for r in sheet.get_all_records() if r.get('狀態') == '待處理'])
-    except: pass
-    return render_template('admin/dashboard.html', user_count=len(users), report_count=report_count)
+        user_count = len(list(db_firestore.collection('users').stream()))
+        report_count = len(list(db_firestore.collection('reports').where('status', '==', '待處理').stream()))
+    except:
+        user_count = 0
+        report_count = 0
+    return render_template('admin/dashboard.html', user_count=user_count, report_count=report_count)
 
 @app.route('/admin/reports')
 @login_required
 @admin_required
 def admin_reports():
     try:
-        records = get_gspread_client().open(SHEET_NAME).worksheet('Reports').get_all_records()
-        # 加入 index 方便後續處理
-        for i, r in enumerate(records): r['row_idx'] = i + 2
-        return render_template('admin/reports.html', reports=records)
-    except: return "讀取回報失敗。"
+        reports = []
+        docs = db_firestore.collection('reports').order_by('timestamp', direction=firestore.Query.DESCENDING).stream()
+        for doc in docs:
+            d = doc.to_dict()
+            d['doc_id'] = doc.id
+            reports.append(d)
+        return render_template('admin/reports.html', reports=reports)
+    except Exception as e:
+        print(f"Admin reports error: {e}")
+        return "讀取回報失敗。"
 
 @app.route('/admin/users')
 @login_required
 @admin_required
 def admin_users():
-    users = get_all_users(True)
-    return render_template('admin/users.html', users=users.values())
+    try:
+        users = []
+        docs = db_firestore.collection('users').stream()
+        for doc in docs:
+            users.append(doc.to_dict())
+        return render_template('admin/users.html', users=users)
+    except:
+        return "讀取會員失敗。"
 
 @app.route('/admin/db')
 @login_required
 @admin_required
 def admin_db():
     df = get_data()
-    # 建立 Google Sheets 連結
-    sheet_url = f"https://docs.google.com/spreadsheets/d/{get_gspread_client().open(SHEET_NAME).id}/edit"
+    # 這裡暫時維持 Google Sheets 連結
+    client = get_gspread_client()
+    sheet_url = f"https://docs.google.com/spreadsheets/d/{client.open(SHEET_NAME).id}/edit"
     return render_template('admin/db.html', cars=df.to_dict('records'), sheet_url=sheet_url)
 
-@app.route('/admin/handle_report/<int:row_idx>')
+@app.route('/admin/handle_report/<doc_id>')
 @login_required
 @admin_required
-def handle_report(row_idx):
+def handle_report(doc_id):
     try:
-        sheet = get_gspread_client().open(SHEET_NAME).worksheet('Reports')
-        sheet.update_cell(row_idx, 6, '已處理')
+        db_firestore.collection('reports').document(doc_id).update({'status': '已處理'})
         flash('✅ 任務完成：該回報已標記為處理完畢。', 'success')
     except: flash('❌ 操作失敗。', 'error')
     return redirect(url_for('admin_reports'))
@@ -337,74 +401,88 @@ def register():
         name = request.form.get('name', '').strip()
         phone = request.form.get('phone', '').strip()
         shop_name = request.form.get('shop_name', '').strip()
+        card_image = request.files.get('card_image')
         
         if not email:
             flash('📧 Email 為必填項目，以便找回密碼。', 'error')
             return redirect(url_for('register'))
             
         if len(phone) == 9 and phone.isdigit(): phone = "0" + phone
+        
         try:
-            client = get_gspread_client()
-            sheet = client.open(SHEET_NAME).worksheet('Users')
-            if phone in sheet.col_values(4):
+            # 上傳名片並進行 OCR
+            card_image_url = ""
+            if card_image:
+                image_content = card_image.read()
+                ocr_name, ocr_phone = extract_card_info(image_content)
+                
+                # 自動填充 (如果使用者沒填)
+                if not name and ocr_name: name = ocr_name
+                if not phone and ocr_phone: phone = ocr_phone
+                
+                # 再次檢查格式
+                if phone and len(phone) == 9 and phone.isdigit(): phone = "0" + phone
+
+                # 上傳到 Firebase Storage
+                filename = f"business_cards/{phone if phone else 'unknown'}_{int(time.time())}.jpg"
+                blob = bucket.blob(filename)
+                blob.upload_from_string(image_content, content_type='image/jpeg')
+                blob.make_public()
+                card_image_url = blob.public_url
+
+            # 檢查是否已存在 (移到 OCR 之後，因為 phone 可能被 OCR 更新)
+            if phone and db_firestore.collection('users').document(phone).get().exists:
                 flash('🔒 該號碼已註冊。請直接登入。', 'error')
                 return redirect(url_for('login'))
             
+            if not phone:
+                flash('📱 手機號碼為必填項目。', 'error')
+                return redirect(url_for('register'))
+
             hashed_password = generate_password_hash(password)
-            sheet.append_row([email, hashed_password, name, phone, shop_name, "", ""])
-            get_all_users(True)
+            db_firestore.collection('users').document(phone).set({
+                'email': email,
+                'password_hash': hashed_password,
+                'name': name,
+                'phone': phone,
+                'shop_name': shop_name,
+                'card_image_url': card_image_url,
+                'reset_code': "",
+                'created_at': firestore.SERVER_TIMESTAMP
+            })
             flash('🎨 歡迎加入！帳號已準備就緒，請登入。', 'success')
+            
+            # 發送 Telegram 通知
+            notify_msg = f"<b>🆕 新使用者註冊</b>\n👤 姓名: {name}\n📱 電話: {phone}\n🏢 店名: {shop_name}"
+            send_telegram_notification(notify_msg)
+            
             return redirect(url_for('login'))
-        except: flash('⚙️ 註冊服務暫時中斷，請稍後。', 'error')
+        except Exception as e:
+            print(f"Register error: {e}")
+            flash('⚙️ 註冊服務暫時中斷，請稍後。', 'error')
     return render_template('register.html')
 
 @app.route('/forgot_password', methods=['POST'])
 def forgot_password():
     phone = request.form.get('phone', '').strip()
     if len(phone) == 9 and phone.isdigit(): phone = "0" + phone
-    
-    users = get_all_users(True)
-    user = users.get(phone)
-    
+    user = get_user_from_firestore(phone)
     if not user or not user.email:
         flash('🚫 找不到對應的會員或 Email 資料。', 'error')
         return redirect(url_for('login'))
-    
-    # 產生 6 位數字驗證碼
     reset_code = ''.join([str(secrets.SystemRandom().randint(0, 9)) for _ in range(6)])
-    
     try:
-        # 更新 Google Sheets 的 reset_code (假設在第 7 欄)
-        client = get_gspread_client()
-        sheet = client.open(SHEET_NAME).worksheet('Users')
-        phones = sheet.col_values(4)
-        row_idx = -1
-        for i, p in enumerate(phones):
-            p_str = str(p).strip().lstrip("'")
-            if len(p_str) == 9 and p_str.isdigit(): p_str = "0" + p_str
-            if p_str == phone:
-                row_idx = i + 1
-                break
-        
-        if row_idx != -1:
-            # 確保欄位存在，更新第 7 欄
-            sheet.update_cell(row_idx, 7, reset_code)
-            
-            # 寄信
-            subject = "【京富毅冷媒系統】密碼重設驗證碼"
-            body = f"親愛的 {user.name} 您好：\n\n您正在申請重設密碼。\n您的六位數驗證碼為：{reset_code}\n\n請在重設頁面輸入此驗證碼以設定新密碼。\n\n京富毅汽車材料 敬上"
-            
-            if send_mail(user.email, subject, body):
-                flash(f'📧 驗證碼已寄送到您的信箱：{user.email}，請於下方輸入。', 'success')
-                return render_template('reset_password.html', phone=phone)
-            else:
-                flash('⚠️ 驗證碼產生成功但郵件發送失敗，請聯繫管理員。', 'error')
+        db_firestore.collection('users').document(phone).update({'reset_code': reset_code})
+        subject = "【京富毅冷媒系統】密碼重設驗證碼"
+        body = f"親愛的 {user.name} 您好：\n\n您正在申請重設密碼。\n您的六位數驗證碼為：{reset_code}\n\n請在重設頁面輸入此驗證碼以設定新密碼。\n\n京富毅汽車材料 敬上"
+        if send_mail(user.email, subject, body):
+            flash(f'📧 驗證碼已寄送到您的信箱：{user.email}，請於下方輸入。', 'success')
+            return render_template('reset_password.html', phone=phone)
         else:
-            flash('❌ 系統錯誤，請聯繫管理員。', 'error')
+            flash('⚠️ 驗證碼產生成功但郵件發送失敗，請聯繫管理員。', 'error')
     except Exception as e:
         print(f"Forgot error: {e}")
         flash('🔧 暫時無法處理，請稍後再試。', 'error')
-        
     return redirect(url_for('login'))
 
 @app.route('/reset_password', methods=['GET', 'POST'])
@@ -413,46 +491,29 @@ def reset_password():
         phone = request.form.get('phone', '').strip()
         reset_code = request.form.get('reset_code', '').strip()
         new_password = request.form.get('new_password', '').strip()
-        
         if len(phone) == 9 and phone.isdigit(): phone = "0" + phone
-        
         try:
-            client = get_gspread_client()
-            sheet = client.open(SHEET_NAME).worksheet('Users')
-            records = sheet.get_all_records()
-            
-            row_idx = -1
-            stored_code = ""
-            user_data = None
-            
-            for i, r in enumerate(records):
-                p_str = str(r.get('phone', '')).strip().lstrip("'")
-                if len(p_str) == 9 and p_str.isdigit(): p_str = "0" + p_str
-                if p_str == phone:
-                    row_idx = i + 2 # Header is row 1
-                    stored_code = str(r.get('reset_code', '')).strip()
-                    user_data = r
-                    break
-            
-            if row_idx != -1 and stored_code == reset_code and reset_code != "":
-                hashed_pw = generate_password_hash(new_password)
-                sheet.update_cell(row_idx, 2, hashed_pw)
-                sheet.update_cell(row_idx, 7, "") # 清除驗證碼
-                
-                # 自動登入
-                user = User(phone, user_data.get('email'), user_data.get('name'), user_data.get('shop_name'), hashed_pw)
-                login_user(user)
-                
-                flash('🎉 密碼重設成功！已為您自動登入。', 'success')
-                return redirect(url_for('ad_page'))
-            else:
-                flash('❌ 驗證碼錯誤或已失效。', 'error')
-                return render_template('reset_password.html', phone=phone)
+            doc_ref = db_firestore.collection('users').document(phone)
+            doc = doc_ref.get()
+            if doc.exists:
+                data = doc.to_dict()
+                if data.get('reset_code') == reset_code and reset_code != "":
+                    hashed_pw = generate_password_hash(new_password)
+                    doc_ref.update({
+                        'password_hash': hashed_pw,
+                        'reset_code': ""
+                    })
+                    # 自動登入
+                    user = User(phone, data.get('email'), data.get('name'), data.get('shop_name'), hashed_pw)
+                    login_user(user)
+                    flash('🎉 密碼重設成功！已為您自動登入。', 'success')
+                    return redirect(url_for('ad_page'))
+            flash('❌ 驗證碼錯誤或已失效。', 'error')
+            return render_template('reset_password.html', phone=phone)
         except Exception as e:
             print(f"Reset error: {e}")
             flash('🔧 重設失敗，請稍後再試。', 'error')
             return render_template('reset_password.html', phone=phone)
-            
     return render_template('reset_password.html', phone=request.args.get('phone', ''))
 
 @app.route('/profile')
@@ -474,10 +535,13 @@ def logout():
 def db_sync():
     df = get_data()
     global _db_version_cache
-    return {
+    response = make_response({
         'version': _db_version_cache or str(time.time()),
         'data': df.to_dict('records')
-    }
+    })
+    # Cloudflare 快取優化：瀏覽器快取 1 小時，Cloudflare 快取 7 天 (s-maxage)
+    response.headers['Cache-Control'] = 'public, max-age=3600, s-maxage=604800'
+    return response
 
 @app.route('/ad')
 @login_required
@@ -495,10 +559,24 @@ def show_models(brand_name):
     return render_template('models.html', brand=brand_name, cars=cars)
 
 @app.route('/manifest.json')
-def manifest(): return app.send_static_file('manifest.json')
+def manifest():
+    response = make_response(app.send_static_file('manifest.json'))
+    response.headers['Cache-Control'] = 'public, max-age=86400'
+    return response
 
 @app.route('/service-worker.js')
-def service_worker(): return app.send_static_file('service-worker.js')
+def service_worker():
+    response = make_response(app.send_static_file('service-worker.js'))
+    response.headers['Cache-Control'] = 'public, max-age=86400'
+    return response
+
+# --- 全域快取優化 (針對靜態檔案) ---
+@app.after_request
+def add_header(response):
+    # 如果是圖片或字體，讓 Cloudflare 快取久一點
+    if request.path.startswith('/static/'):
+        response.headers['Cache-Control'] = 'public, max-age=31536000'
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

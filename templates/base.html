@@ -27,6 +27,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined|Material+Icons+Round" rel="stylesheet"/>
     
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCVpIAGDG3OnFWtW0Sx2vCFQmfJpOCrxPQ",
+            authDomain: "caracsystem.firebaseapp.com",
+            projectId: "caracsystem",
+            storageBucket: "caracsystem.firebasestorage.app",
+            messagingSenderId: "960579206676",
+            appId: "1:960579206676:web:559e179e1fece36e18b101",
+            measurementId: "G-BT45JVEP0Z"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        
+        // 將 app 掛載到 window 供其他頁面使用
+        window.fuyiFirebaseApp = app;
+    </script>
+
     <script>
         tailwind.config = {
             darkMode: "class", 
